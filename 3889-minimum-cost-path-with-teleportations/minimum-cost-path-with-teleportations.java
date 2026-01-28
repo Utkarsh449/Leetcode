@@ -1,65 +1,48 @@
+// https://www.youtube.com/@0x3f
 class Solution {
     public int minCost(int[][] grid, int k) {
-        int m = grid.length, n = grid[0].length;
-        int inf = Integer.MAX_VALUE / 2;
+        int m = grid.length;
+        int n = grid[0].length;
+        if (k > 0 && grid[0][0] >= grid[m - 1][n - 1]) {
+            return 0;
+        }
 
-        int[][][] f = new int[k + 1][m][n];
+        int mx = 0;
+        for (int[] row : grid) {
+            for (int x : row) {
+                mx = Math.max(mx, x);
+            }
+        }
+
+        int[] sufMinF = new int[mx + 2];
+        Arrays.fill(sufMinF, Integer.MAX_VALUE);
+        int[] minF = new int[mx + 1];
+        int[] f = new int[n + 1];
+
         for (int t = 0; t <= k; t++) {
-            for (int i = 0; i < m; i++) {
-                Arrays.fill(f[t][i], inf);
-            }
-        }
-
-        f[0][0][0] = 0;
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n; j++) {
-                if (i > 0) {
-                    f[0][i][j] = Math.min(f[0][i][j], f[0][i - 1][j] + grid[i][j]);
-                }
-                if (j > 0) {
-                    f[0][i][j] = Math.min(f[0][i][j], f[0][i][j - 1] + grid[i][j]);
-                }
-            }
-        }
-
-        Map<Integer, List<int[]>> g = new HashMap<>();
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n; j++) {
-                int x = grid[i][j];
-                g.computeIfAbsent(x, z -> new ArrayList<>()).add(new int[] {i, j});
-            }
-        }
-
-        List<Integer> keys = new ArrayList<>(g.keySet());
-        keys.sort(Collections.reverseOrder());
-
-        for (int t = 1; t <= k; t++) {
-            int mn = inf;
-            for (int key : keys) {
-                List<int[]> pos = g.get(key);
-                for (int[] p : pos) {
-                    mn = Math.min(mn, f[t - 1][p[0]][p[1]]);
-                }
-                for (int[] p : pos) {
-                    f[t][p[0]][p[1]] = mn;
-                }
-            }
-            for (int i = 0; i < m; i++) {
+            Arrays.fill(minF, Integer.MAX_VALUE);
+            Arrays.fill(f, Integer.MAX_VALUE / 2);
+            f[1] = -grid[0][0];
+            for (int[] row : grid) {
                 for (int j = 0; j < n; j++) {
-                    if (i > 0) {
-                        f[t][i][j] = Math.min(f[t][i][j], f[t][i - 1][j] + grid[i][j]);
-                    }
-                    if (j > 0) {
-                        f[t][i][j] = Math.min(f[t][i][j], f[t][i][j - 1] + grid[i][j]);
-                    }
+                    int x = row[j];
+                    f[j + 1] = Math.min(Math.min(f[j], f[j + 1]) + x, sufMinF[x]);
+                    minF[x] = Math.min(minF[x], f[j + 1]);
                 }
+            }
+            boolean done = true;
+            for (int i = mx; i >= 0; i--) {
+                int mn = Math.min(sufMinF[i + 1], minF[i]);
+                if (mn < sufMinF[i]) {
+                    sufMinF[i] = mn;
+                    done = false;
+                }
+            }
+            if (done) {
+                break;
             }
         }
 
-        int ans = inf;
-        for (int t = 0; t <= k; t++) {
-            ans = Math.min(ans, f[t][m - 1][n - 1]);
-        }
-        return ans;
+        return f[n];
     }
 }
