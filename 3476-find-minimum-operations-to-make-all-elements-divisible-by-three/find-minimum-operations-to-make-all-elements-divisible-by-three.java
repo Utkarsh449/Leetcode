@@ -1,0 +1,10 @@
+class Solution {
+    public int minimumOperations(int[] nums) {
+        int ans=0;
+        for(int num:nums){
+            //ans+=Math.min(num%3,3-num%3);
+            if(num%3!=0)ans++;
+        }
+        return ans;
+    }
+}
