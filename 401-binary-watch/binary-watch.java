@@ -1,24 +1,65 @@
 class Solution {
-  public List<String> readBinaryWatch(int turnedOn) {
-    List<String> ans = new ArrayList<>();
-    dfs(turnedOn, 0, 0, 0, ans);
-    return ans;
-  }
-
-  private int[] hours = new int[] {1, 2, 4, 8};
-  private int[] minutes = new int[] {1, 2, 4, 8, 16, 32};
-
-  private void dfs(int turnedOn, int s, int h, int m, List<String> ans) {
-    if (turnedOn == 0) {
-      final String time = String.valueOf(h) + ":" + (m < 10 ? "0" : "") + String.valueOf(m);
-      ans.add(time);
-      return;
+    public List<String> readBinaryWatch(int turnedOn) {
+        List<String> ans = new ArrayList<>();
+        if(turnedOn > 8){
+            return ans;
+        }
+        recurhour(ans , new StringBuilder() , 0 , 4 , turnedOn , 0);
+        return ans;
     }
-
-    for (int i = s; i < hours.length + minutes.length; ++i)
-      if (i < 4 && h + hours[i] < 12)
-        dfs(turnedOn - 1, i + 1, h + hours[i], m, ans);
-      else if (i >= 4 && m + minutes[i - 4] < 60)
-        dfs(turnedOn - 1, i + 1, h, m + minutes[i - 4], ans);
-  }
+    void recurhour( List<String> ans , StringBuilder ds , int total , int bitno , int limit , int on){
+        // System.out.println(total);
+        if(bitno == 0){
+            if(total > 11){
+                return;
+            }
+            if(total == 11){
+                ds.append("11");
+            }
+            else if(total == 10){
+                ds.append("10");
+            }else{
+                ds.append((char)(total + '0'));
+            }
+            ds.append(':');
+            recurmin(ans , ds , 0 , 6, limit , on , ds.length());
+            ds.setLength(0);
+            return;
+        }
+        int ntotal = total + (1<<(bitno-1));
+        if(on < limit){
+        recurhour(ans , ds , ntotal , bitno-1 , limit , on+1);
+        }
+        recurhour(ans  , ds , total  , bitno-1, limit , on);
+        return;
+    }
+    void recurmin( List<String> ans , StringBuilder ds , int total , int bitno , int limit , int on , int len){
+        if(bitno == 0){
+            if(on!=limit){
+                return;
+            }
+            if(total > 59){
+                return;
+            }
+            
+            if(total >= 10){
+                // ds.append("10");
+                ds.append((char)(total/10 + '0'));
+                ds.append((char)(total%10 + '0'));
+            }else{
+                ds.append((char)('0'));
+                ds.append((char)(total + '0'));
+            }
+            ans.add(ds.toString());
+            ds.setLength(len);
+            return;
+        }
+        int ntotal = total + (1<<(bitno-1));
+        if(on < limit){
+        recurmin(ans , ds , ntotal , bitno-1, limit , on+1 , len);
+        }
+        
+        recurmin(ans  , ds , total  , bitno-1, limit , on , len);
+        return;
+    }
 }
