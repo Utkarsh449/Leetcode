@@ -1,27 +1,30 @@
 class Solution {
-    public String makeLargestSpecial(String s) {
-        if (s.isEmpty()) {
-            return "";
-        }
-        List<String> specialSubstrings = new ArrayList<>();
-        int balance = 0;
-        int startIndex = 0;
-        for (int currentIndex = 0; currentIndex < s.length(); currentIndex++) {
-            if (s.charAt(currentIndex) == '1') {
-                balance++;
-            } else {
-                balance--;
+    public String makeLargestSpecial(String S) {
+        if(S == null || S.length() == 0 || S.length() == 2) return S;
+        PriorityQueue<String> pq = new PriorityQueue<>((a, b) -> b.compareTo(a));
+        int acc = 1, prev = 0;
+        for(int i = 1; i <= S.length(); i++) {
+            if(acc == 0) {
+                if(!(prev == 0 && i == S.length())) pq.add(makeLargestSpecial(S.substring(prev, i)));
+                prev = i;
             }
-            if (balance == 0) {
-                String innerContent = makeLargestSpecial(
-                    s.substring(startIndex + 1, currentIndex)
-                );
-                String specialString = "1" + innerContent + "0";
-                specialSubstrings.add(specialString);
-                startIndex = currentIndex + 1;
+            if(i == S.length()) break;
+            if(S.charAt(i) == '1') {
+                acc++;
+            }
+            else {
+                acc--;
             }
         }
-        specialSubstrings.sort(Comparator.reverseOrder());
-        return String.join("", specialSubstrings);
+        StringBuilder ans = new StringBuilder();
+        while(!pq.isEmpty()) {
+            ans.append(pq.poll());
+        }
+        if(ans.length() == 0) {
+            ans.append('1');
+            ans.append(makeLargestSpecial(S.substring(1, S.length() - 1)));
+            ans.append('0');
+        }
+        return ans.toString();
     }
 }
