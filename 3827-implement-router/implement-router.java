@@ -1,105 +1,176 @@
-class Packet implements Comparable<Packet> {
-  public int source;
-  public int destination;
-  public int timestamp;
+class Node{
 
-  public Packet(int source, int destination, int timestamp) {
-    this.source = source;
-    this.destination = destination;
-    this.timestamp = timestamp;
-  }
+    public Packet packet;
+    public Node prev;
+    public Node next;
 
-  @Override
-  public int compareTo(Packet other) {
-    if (source != other.source)
-      return Integer.compare(source, other.source);
-    if (destination != other.destination)
-      return Integer.compare(destination, other.destination);
-    return Integer.compare(timestamp, other.timestamp);
-  }
+    public Node(Packet packet, Node prev, Node next){
+        this.packet = packet;
+        this.prev = prev;
+        this.next = next;
+    }
+}
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    Packet packet = (Packet) o;
-    return source == packet.source && destination == packet.destination &&
-        timestamp == packet.timestamp;
-  }
+class Packet{
+    public int source;
+    public int destination;
+    public int timestamp;
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(source, destination, timestamp);
-  }
+
+    public Packet(int source, int destination, int timestamp){
+        this.source = source;
+        this.destination = destination;
+        this.timestamp = timestamp;
+    }
+    @Override
+    public boolean equals(Object o){
+        if(this == o){
+            return true;
+        }
+        if(o == null || this.getClass() != o.getClass()){
+            return false;
+        } else {
+            Packet packet = (Packet) o;
+            return this.source == packet.source 
+            && this.destination == packet.destination 
+            && this.timestamp == packet.timestamp;
+        }
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(source, destination, timestamp);
+    }
+
 }
 
 class Router {
-  public Router(int memoryLimit) {
-    this.memoryLimit = memoryLimit;
-  }
 
-  public boolean addPacket(int source, int destination, int timestamp) {
-    Packet packet = new Packet(source, destination, timestamp);
-    if (uniquePackets.contains(packet))
-      return false;
-    if (packetQueue.size() == memoryLimit)
-      forwardPacket();
-    packetQueue.add(packet);
-    uniquePackets.add(packet);
-    destinationTimestamps.computeIfAbsent(destination, k -> new ArrayList<>()).add(timestamp);
-    return true;
-  }
+    Map<Integer, DestStore> destMap = new HashMap<>();
 
-  public List<Integer> forwardPacket() {
-    if (packetQueue.isEmpty())
-      return Collections.emptyList();
-    Packet nextPacket = packetQueue.poll();
-    uniquePackets.remove(nextPacket);
-    processedPacketIndex.merge(nextPacket.destination, 1, Integer::sum);
-    return Arrays.asList(nextPacket.source, nextPacket.destination, nextPacket.timestamp);
-  }
-
-  public int getCount(int destination, int startTime, int endTime) {
-    if (!destinationTimestamps.containsKey(destination))
-      return 0;
-    List<Integer> timestamps = destinationTimestamps.get(destination);
-    final int startIndex = processedPacketIndex.getOrDefault(destination, 0);
-    final int lowerBoundIndex = firstGreaterEqual(timestamps, startIndex, startTime);
-    final int upperBoundIndex = firstGreater(timestamps, lowerBoundIndex, endTime);
-    return upperBoundIndex - lowerBoundIndex;
-  }
-
-  private final int memoryLimit;
-  private final TreeSet<Packet> uniquePackets = new TreeSet<>();
-  private final Queue<Packet> packetQueue = new LinkedList<>();
-  private final Map<Integer, List<Integer>> destinationTimestamps = new HashMap<>();
-  private final Map<Integer, Integer> processedPacketIndex = new HashMap<>();
-
-  private int firstGreaterEqual(List<Integer> timestamps, int startIndex, int startTime) {
-    int l = startIndex;
-    int r = timestamps.size();
-    while (l < r) {
-      final int m = (l + r) / 2;
-      if (timestamps.get(m) >= startTime)
-        r = m;
-      else
-        l = m + 1;
+    static class DestStore {
+        ArrayList<Integer> times = new ArrayList<>();
+        int headIdx = 0;
     }
-    return l;
-  }
 
-  private int firstGreater(List<Integer> timestamps, int startIndex, int endTime) {
-    int l = startIndex;
-    int r = timestamps.size();
-    while (l < r) {
-      final int m = (l + r) / 2;
-      if (timestamps.get(m) > endTime)
-        r = m;
-      else
-        l = m + 1;
+    int memoryLimit;
+    Node head;
+    Node tail;
+    int currentCount;
+    Set<Packet> packets;
+
+    public Router(int memoryLimit) {
+        this.memoryLimit = memoryLimit;
+        this.head = null;
+        this.tail = null;
+        this.currentCount = 0;
+        this.packets = new HashSet<>();
     }
-    return l;
-  }
+    
+    public boolean addPacket(int source, int destination, int timestamp) {
+        
+        Packet addedPackage = new Packet(source, destination, timestamp);
+        Node newNode = new Node(addedPackage, null, null);
+        if(head == null){ //adding the first packet
+            head = newNode;
+            tail = newNode;
+            packets.add(addedPackage);
+            destMap.computeIfAbsent(destination, k -> new DestStore()).times.add(timestamp);
+            currentCount++;
+            return true;
+        }
+        if (packets.contains(addedPackage)) {
+            return false;
+        } else {
+                tail.next = newNode;
+                newNode.prev = tail;
+                tail = newNode;
+                
+               if (currentCount == memoryLimit) {
+                    Packet removed = head.packet;
+                    packets.remove(removed);
+                    DestStore rs = destMap.get(removed.destination);
+                    rs.headIdx++;
+                    if (head == tail) {
+                        head = tail = null;
+                    } else {
+                        head = head.next;
+                        head.prev = null;
+                    }               
+                    currentCount--;
+                }
+                currentCount++;
+                packets.add(addedPackage);
+                destMap.computeIfAbsent(destination, k -> new DestStore()).times.add(timestamp);
+                return true;
+        }
+        
+
+    }
+    
+    public int[] forwardPacket() {
+        if(head == null){
+            return new int[0];
+        }
+        if(head == tail){
+            Packet packet = head.packet;
+            
+            head = null;
+            tail = null;
+            int[] packetArr = {packet.source, packet.destination, packet.timestamp};
+            currentCount--;
+            packets.remove(packet);
+            DestStore s = destMap.get(packet.destination);
+            s.headIdx++;
+            return packetArr;
+        } else {
+            Packet packet = head.packet;
+            head = head.next;
+            head.prev = null;
+
+            int[] packetArr = {packet.source, packet.destination, packet.timestamp};
+            currentCount--;
+            packets.remove(packet);
+            DestStore s = destMap.get(packet.destination);
+            s.headIdx++;
+            return packetArr;
+        }
+    }
+    
+    public int getCount(int destination, int startTime, int endTime) {
+        
+        DestStore store = destMap.get(destination);
+        if (store == null) return 0;
+
+        int lo = lowerBound(store.times, store.headIdx, startTime);
+        int hi = upperBound(store.times, store.headIdx, endTime);
+        return hi - lo;
+    }
+    static int lowerBound(ArrayList<Integer> a, int from, int x) { // first >= x
+        int l = from, r = a.size();
+        while (l < r) {
+            int m = (l + r) >>> 1;
+            if (a.get(m) >= x) r = m;
+            else l = m + 1;
+        }
+        return l;
+    }
+
+    static int upperBound(ArrayList<Integer> a, int from, int x) { // first > x
+        int l = from, r = a.size();
+        while (l < r) {
+            int m = (l + r) >>> 1;
+            if (a.get(m) > x) r = m;
+            else l = m + 1;
+        }
+        return l;
+    }
+
 }
+
+/**
+ * Your Router object will be instantiated and called as such:
+ * Router obj = new Router(memoryLimit);
+ * boolean param_1 = obj.addPacket(source,destination,timestamp);
+ * int[] param_2 = obj.forwardPacket();
+ * int param_3 = obj.getCount(destination,startTime,endTime);
+ */
