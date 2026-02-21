@@ -1,51 +1,129 @@
-class MovieRentingSystem {
-  public MovieRentingSystem(int n, int[][] entries) {
-    for (int[] e : entries) {
-      final int shop = e[0];
-      final int movie = e[1];
-      final int price = e[2];
-      unrented.putIfAbsent(movie, new TreeSet<>(comparator));
-      unrented.get(movie).add(new Entry(price, shop, movie));
-      shopAndMovieToPrice.put(new Pair<>(shop, movie), price);
+import java.util.*;
+
+public class MovieRentingSystem {
+    private final Map<Long, Integer> shopMap = new HashMap<>();
+    private final Map<Integer, NavigableSet<Pair>> movieMap = new HashMap<>();
+    private final NavigableSet<Triple> rented = new TreeSet<>();
+
+    private static long key(int shop, int movie) {
+        return (((long) shop) << 32) | (movie & 0xFFFFFFFFL);
     }
-  }
 
-  public List<Integer> search(int movie) {
-    return unrented.getOrDefault(movie, Collections.emptySet())
-        .stream()
-        .limit(5)
-        .map(e -> e.shop)
-        .collect(Collectors.toList());
-  }
+    public MovieRentingSystem(int n, int[][] entries) {
+        for (int[] e : entries) {
+            int shop = e[0];
+            int movie = e[1];
+            int price = e[2];
+            shopMap.put(key(shop, movie), price);
+            movieMap.computeIfAbsent(movie, k -> new TreeSet<>()).add(new Pair(price, shop));
+        }
+    }
 
-  public void rent(int shop, int movie) {
-    final int price = shopAndMovieToPrice.get(new Pair<>(shop, movie));
-    unrented.get(movie).remove(new Entry(price, shop, movie));
-    rented.add(new Entry(price, shop, movie));
-  }
+    public MovieRentingSystem(int n, List<List<Integer>> entries) {
+        for (List<Integer> e : entries) {
+            int shop = e.get(0);
+            int movie = e.get(1);
+            int price = e.get(2);
+            shopMap.put(key(shop, movie), price);
+            movieMap.computeIfAbsent(movie, k -> new TreeSet<>()).add(new Pair(price, shop));
+        }
+    }
 
-  public void drop(int shop, int movie) {
-    final int price = shopAndMovieToPrice.get(new Pair<>(shop, movie));
-    unrented.get(movie).add(new Entry(price, shop, movie));
-    rented.remove(new Entry(price, shop, movie));
-  }
+    public List<Integer> search(int movie) {
+        List<Integer> ans = new ArrayList<>();
+        NavigableSet<Pair> set = movieMap.get(movie);
+        if (set == null) return ans;
+        int i = 0;
+        for (Pair p : set) {
+            if (i++ >= 5) break;
+            ans.add(p.shop);
+        }
+        return ans;
+    }
 
-  public List<List<Integer>> report() {
-    return rented.stream().limit(5).map(e -> List.of(e.shop, e.movie)).collect(Collectors.toList());
-  }
+    public void rent(int shop, int movie) {
+        long k = key(shop, movie);
+        Integer price = shopMap.get(k);
+        if (price == null) return;
+        Pair p = new Pair(price, shop);
+        NavigableSet<Pair> set = movieMap.get(movie);
+        if (set != null) set.remove(p);
+        rented.add(new Triple(price, shop, movie));
+    }
 
-  private record Entry(int price, int shop, int movie) {}
+    public void drop(int shop, int movie) {
+        long k = key(shop, movie);
+        Integer price = shopMap.get(k);
+        if (price == null) return;
+        Triple t = new Triple(price, shop, movie);
+        rented.remove(t);
+        movieMap.computeIfAbsent(movie, m -> new TreeSet<>()).add(new Pair(price, shop));
+    }
 
-  private Comparator<Entry> comparator = Comparator.comparingInt(Entry::price)
-                                             .thenComparingInt(Entry::shop)
-                                             .thenComparingInt(Entry::movie);
+    public List<List<Integer>> report() {
+        List<List<Integer>> ans = new ArrayList<>();
+        int i = 0;
+        for (Triple t : rented) {
+            if (i++ >= 5) break;
+            ans.add(Arrays.asList(t.shop, t.movie));
+        }
+        return ans;
+    }
 
-  // {movie: (price, shop)}
-  private Map<Integer, Set<Entry>> unrented = new HashMap<>();
+    private static final class Pair implements Comparable<Pair> {
+        final int price;
+        final int shop;
 
-  // {(shop, movie): price}
-  private Map<Pair<Integer, Integer>, Integer> shopAndMovieToPrice = new HashMap<>();
+        Pair(int price, int shop) {
+            this.price = price;
+            this.shop = shop;
+        }
 
-  // (price, shop, movie)
-  private Set<Entry> rented = new TreeSet<>(comparator);
+        @Override
+        public int compareTo(Pair o) {
+            if (this.price != o.price) return Integer.compare(this.price, o.price);
+            return Integer.compare(this.shop, o.shop);
+        }
+
+        @Override public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (!(obj instanceof Pair)) return false;
+            Pair other = (Pair) obj;
+            return this.price == other.price && this.shop == other.shop;
+        }
+
+        @Override public int hashCode() {
+            return Objects.hash(price, shop);
+        }
+    }
+
+    private static final class Triple implements Comparable<Triple> {
+        final int price;
+        final int shop;
+        final int movie;
+
+        Triple(int price, int shop, int movie) {
+            this.price = price;
+            this.shop = shop;
+            this.movie = movie;
+        }
+
+        @Override
+        public int compareTo(Triple o) {
+            if (this.price != o.price) return Integer.compare(this.price, o.price);
+            if (this.shop != o.shop) return Integer.compare(this.shop, o.shop);
+            return Integer.compare(this.movie, o.movie);
+        }
+
+        @Override public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (!(obj instanceof Triple)) return false;
+            Triple other = (Triple) obj;
+            return this.price == other.price && this.shop == other.shop && this.movie == other.movie;
+        }
+
+        @Override public int hashCode() {
+            return Objects.hash(price, shop, movie);
+        }
+    }
 }
