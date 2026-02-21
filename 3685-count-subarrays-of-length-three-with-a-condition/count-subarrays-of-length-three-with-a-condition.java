@@ -1,15 +1,13 @@
 class Solution {
     public int countSubarrays(int[] nums) {
-        int n = nums.length;
-        if (n < 3) return 0;
-        int count = 0;
-        // We check every possible subarray of length 3
-        // middle index i runs from 1 to n-2
-        for (int i = 1; i <= n - 2; i++) {
-            if ((nums[i - 1] + nums[i + 1]) * 2 == nums[i]) {
-                count++;
-            }
+        int ans=0;
+
+        for(int i=0;i<nums.length-2;i++)
+        {
+            int a=nums[i],b=nums[i+1],c=nums[i+2];
+            if(2*(a+c)==(b)) ans++;
+
         }
-        return count;
+        return ans;
     }
 }
