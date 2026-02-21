@@ -1,13 +1,8 @@
-SELECT
-  StartActivity.machine_id,
-  ROUND(
-    AVG(EndActivity.timestamp - StartActivity.timestamp),
-    3
-  ) AS processing_time
-FROM Activity AS StartActivity
-INNER JOIN Activity AS EndActivity
-  USING (machine_id, process_id)
-WHERE
-  StartActivity.activity_type = 'start'
-  AND EndActivity.activity_type = 'end'
-GROUP BY 1;
+# Write your MySQL query statement below
+SELECT 
+    machine_id,
+    ROUND(SUM(CASE WHEN activity_type='start' THEN timestamp*-1 ELSE timestamp END)*1.0
+    / (SELECT COUNT(DISTINCT process_id)),3) AS processing_time
+FROM 
+    Activity
+GROUP BY machine_id
