@@ -1,26 +1,55 @@
 class Solution {
-  public int maxSideLength(int[][] mat, int threshold) {
-    final int m = mat.length;
-    final int n = mat[0].length;
-    int ans = 0;
-    int[][] prefix = new int[m + 1][n + 1];
+    private boolean helper(int side, int k, int [][] colSum){
 
-    for (int i = 0; i < m; ++i)
-      for (int j = 0; j < n; ++j)
-        prefix[i + 1][j + 1] = mat[i][j] + prefix[i][j + 1] + prefix[i + 1][j] - prefix[i][j];
-
-    for (int i = 0; i < m; ++i)
-      for (int j = 0; j < n; ++j)
-        for (int length = ans; length < Math.min(m - i, n - j); ++length) {
-          if (squareSum(prefix, i, j, i + length, j + length) > threshold)
-            break;
-          ans = Math.max(ans, length + 1);
+        int n = colSum.length - 2, m = colSum[0].length - 2;
+        for(int i = side; i<=n; i++){
+            int currSum = 0;
+            for(int j = 1; j<=m; j++){
+                currSum+=(colSum[i][j] - colSum[i-side][j]);
+                if(j<side)continue;
+                currSum-=colSum[i][j-side] - colSum[i-side][j-side];
+                if(currSum<=k){
+                    return true;
+                }
+            }
         }
 
-    return ans;
-  }
+        return false;
 
-  private int squareSum(int[][] prefix, int r1, int c1, int r2, int c2) {
-    return prefix[r2 + 1][c2 + 1] - prefix[r1][c2 + 1] - prefix[r2 + 1][c1] + prefix[r1][c1];
-  }
+
+    }
+
+    public int maxSideLength(int[][] mat, int threshold) {
+        int n = mat.length, m = mat[0].length;
+
+        int [][] colSum = new int[n+2][m+2];
+
+        for(int i = 1; i<=n; i++){
+            for(int j = 1; j<=m; j++){
+                colSum[i][j] = colSum[i-1][j] + mat[i-1][j-1];
+            }
+        }
+        int ans = 0;
+        // for(int side = 1; side<=Math.min(n, m); side++){
+        //     int x = side + 1, y = side+1;
+        //     boolean isValid = helper(side, threshold, colSum);
+        //     if(isValid){
+        //         ans = side;
+        //     }
+        // }
+        int low = 1, high = Math.min(n, m);
+        while(low<=high){
+            int mid = (low+high)/2;
+
+            boolean isValid = helper(mid, threshold, colSum);
+            if(isValid){
+                low = mid+1;
+            }
+            else{
+                high = mid-1;
+            }
+        }
+
+        return high;
+    }
 }
