@@ -1,42 +1,65 @@
-class Fancy {
-  // To undo a * val + b and get the original value, we append (val - b) / a.
-  // By Fermat's little theorem:
-  //   a^(p - 1) ≡ 1 (mod p)
-  //   a^(p - 2) ≡ a^(-1) (mod p)
-  // So, (val - b) / a ≡ (val - b) * a^(p - 2) (mod p)
-  public void append(int val) {
-    final long x = (val - b + MOD) % MOD;
-    vals.add(x * modPow(a, MOD - 2) % MOD);
-  }
+class Fancy 
+{
+    private static final int MOD = 1000000007;
 
-  // If the value is a * val + b, then the value after adding by `inc` will be
-  // a * val + b + inc. So, we adjust b to b + inc.
-  public void addAll(int inc) {
-    b = (b + inc) % MOD;
-  }
+    // cache inverse values for 0-100
+    private static final int[] INV = IntStream.range(0, 101).map(Fancy::modInverse).toArray();
 
-  // If the value is a * val + b, then the value after multiplying by `m` will
-  // be a * m * val + b * m. So, we adjust a to a * m and b to b * m.
-  public void multAll(int m) {
-    a = (a * m) % MOD;
-    b = (b * m) % MOD;
-  }
+    // Modular multiplicative inverse x => a * x % MOD == 1
+    private static int modInverse(int a) 
+    {
+        int m = MOD, y = 0, x = 1;
+        while (a > 1) 
+        {
+            int q = a / m;
+            int t = m;
+            m = a % m;
+            a = t;
+            t = y;
 
-  public int getIndex(int idx) {
-    return idx >= vals.size() ? -1 : (int) ((a * vals.get(idx) + b) % MOD);
-  }
+            y = x - q * y;
+            x = t;
+        }
+        return x < 0 ? x + MOD : x;
+    }
 
-  private static final int MOD = 1_000_000_007;
-  // For each `val` in `vals`, it actually represents a * val + b.
-  private List<Long> vals = new ArrayList<>();
-  private long a = 1;
-  private long b = 0;
+    private long mul = 1; // cumulative multiplication (%MOD)
+    private long add = 0; // cumulative addition (%MOD)
 
-  private int modPow(long x, long n) {
-    if (n == 0)
-      return 1;
-    if (n % 2 == 1)
-      return (int) (x * modPow(x % MOD, (n - 1)) % MOD);
-    return modPow(x * x % MOD, (n / 2)) % MOD;
-  }
+    private long rmul = 1; // reverse cumulative multiplication (%MOD)
+    
+    // store base values, i.e. reverse cumulative transform are applied before addition 
+    private final List<Integer> list = new ArrayList<>();
+    
+    public void append(int val) 
+    {
+        list.add((int) (((MOD - add + val) * rmul) % MOD));
+    }
+
+    public void addAll(int inc) 
+    {
+        add = (add + inc) % MOD;
+    }
+
+    public void multAll(int m) 
+    {
+        mul = (mul * m) % MOD;
+        rmul = (rmul * INV[m]) % MOD;
+        add = (add * m) % MOD;
+    }
+
+    public int getIndex(int idx) 
+    {
+        if (idx < list.size()) return (int) (((list.get(idx) * mul) + add) % MOD);
+        else return -1;
+    }
 }
+
+/**
+ * Your Fancy object will be instantiated and called as such:
+ * Fancy obj = new Fancy();
+ * obj.append(val);
+ * obj.addAll(inc);
+ * obj.multAll(m);
+ * int param_4 = obj.getIndex(idx);
+ */
