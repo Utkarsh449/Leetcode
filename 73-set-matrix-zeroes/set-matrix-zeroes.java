@@ -1,38 +1,78 @@
 class Solution {
-    /**
-     * Sets entire rows and columns to zero if an element is zero.
-     * Uses two boolean arrays to track which rows and columns contain zeros.
-     * 
-     * @param matrix The input matrix to be modified in-place
-     */
     public void setZeroes(int[][] matrix) {
-        // Get matrix dimensions
-        int rows = matrix.length;
-        int cols = matrix[0].length;
-      
-        // Arrays to track which rows and columns should be set to zero
-        boolean[] zeroRows = new boolean[rows];
-        boolean[] zeroCols = new boolean[cols];
-      
-        // First pass: identify all rows and columns that contain zeros
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (matrix[i][j] == 0) {
-                    // Mark this row and column to be zeroed out
-                    zeroRows[i] = true;
-                    zeroCols[j] = true;
+        int m=matrix.length;
+        int n=matrix[0].length;
+        int col0=1;
+        for(int i=0;i<m;i++){
+            for(int j=0;j<n;j++){
+                if(matrix[i][j]==0){
+                    matrix[i][0]=0;
+                    if(j!=0){
+                    matrix[0][j]=0;
+                    }
+                    else{
+                        col0=0;
+                    }
                 }
             }
         }
-      
-        // Second pass: set elements to zero based on marked rows and columns
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                // If current row or column is marked, set element to zero
-                if (zeroRows[i] || zeroCols[j]) {
+
+        for(int i=m-1;i>0;i--){
+            for(int j=n-1;j>0;j--){
+                if ((matrix[i][0] == 0) || (matrix[0][j]==0)) {
                     matrix[i][j] = 0;
                 }
             }
         }
+        if(matrix[0][0]==0){
+            for(int i=0;i<n;i++){
+                matrix[0][i]=0;
+            }
+        }
+        if(col0==0){
+            for(int j=0;j<m;j++){
+                matrix[j][0]=0;
+            }
+        }
+
     }
+    
 }
+
+// class Solution {
+//     public void setZeroes(int [][] matrix) {
+//         for(int i=0;i<matrix.length;i++){
+//             for(int j=0;j<matrix[0].length;j++){
+//                 if(matrix[i][j]==0){
+//                     int k=0;
+//                     while(k<matrix.length){
+//                         if(matrix[k][j]==0){
+//                             k++;
+//                             continue;
+//                         }
+//                         matrix[k][j]=1024;
+//                         k++;
+//                     }
+//                     k=0;
+//                     while(k<matrix[0].length){
+//                         if(matrix[i][k]==0){
+//                             k++;
+//                             continue;
+//                         }
+//                         matrix[i][k]=1024;
+//                         k++;
+//                     }
+
+//                 }
+//             }
+//         }
+
+//         for(int i=0;i<matrix.length;i++){
+//             for(int j=0;j<matrix[0].length;j++){
+//                 if(matrix[i][j]==1024){
+//                     matrix[i][j]=0;
+//                 }
+//             }
+//         }
+//     }
+// } 
